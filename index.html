@@ -2,16 +2,226 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>Моя Игра</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Битва за трон</title>
     <style>
-        body { background-color: #1a1a2e; color: white; text-align: center; font-family: sans-serif; padding-top: 50px; }
-        h1 { color: #e94560; }
-        button { background-color: #0f3460; color: white; border: none; padding: 15px 30px; font-size: 18px; border-radius: 10px; }
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #000;
+            font-family: 'Arial', sans-serif;
+            overflow: hidden; /* Чтобы не было прокрутки */
+            color: white;
+        }
+
+        /* --- ЗАГРУЗОЧНЫЙ ЭКРАН --- */
+        #splash-screen {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            /* Твой фон. Если картинки не будет, будет черный фон */
+            background-image: url('bj.jpg'); 
+            background-size: cover;
+            background-position: center;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            transition: opacity 1s ease-out;
+        }
+
+        /* Затемнение фона, чтобы текст читался лучше */
+        #splash-screen::before {
+            content: "";
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.5); /* Черная полупрозрачная пленка */
+            z-index: -1;
+        }
+
+        /* Название игры */
+        .game-title {
+            font-family: 'Georgia', serif; /* Красивый шрифт с засечками */
+            font-size: 42px;
+            font-weight: bold;
+            color: #FFD700; /* Золотой цвет */
+            text-align: center;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            text-shadow: 0 0 10px #FF8C00, 0 0 20px #FF4500, 0 0 30px #FF4500; /* Эффект свечения */
+            margin-bottom: 50px;
+            animation: fadeInDown 2s ease-out;
+        }
+
+        /* Контейнер для полоски */
+        .progress-container {
+            width: 80%;
+            max-width: 350px;
+            height: 30px;
+            background-color: rgba(255, 255, 255, 0.2); /* Полупрозрачный фон полоски */
+            border: 2px solid #FFD700;
+            border-radius: 15px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 0 15px rgba(255, 215, 0, 0.5);
+        }
+
+        /* Желтая заполняющаяся полоска */
+        .progress-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #FFD700, #FFA500); /* Градиент от золотого к оранжевому */
+            border-radius: 12px;
+            transition: width 0.1s linear;
+        }
+
+        /* Текст с процентами */
+        .progress-text {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            font-weight: bold;
+            font-size: 16px;
+            color: #fff;
+            text-shadow: 1px 1px 3px #000;
+        }
+
+        /* Анимация появления названия */
+        @keyframes fadeInDown {
+            from { opacity: 0; transform: translateY(-30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* --- СТИЛИ ИГРЫ (АРЕНА) --- */
+        #game-container { 
+            display: none; 
+            padding: 20px; 
+            text-align: center;
+        }
+        .card {
+            background-color: #16213e;
+            border-radius: 15px;
+            padding: 15px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.5);
+        }
+        .hp-bar { background-color: #444; height: 20px; border-radius: 10px; overflow: hidden; margin-top: 10px; }
+        .hp-fill { background-color: #e94560; height: 100%; width: 100%; transition: width 0.3s; }
+        button { background-color: #0f3460; color: white; border: none; padding: 15px 30px; font-size: 18px; border-radius: 10px; margin: 5px; cursor: pointer; }
+        button:active { background-color: #e94560; }
+        .log { font-size: 14px; color: #aaa; height: 60px; margin-top: 10px; }
     </style>
 </head>
 <body>
-    <h1>Моя Игра Работает!</h1>
-    <p>Это моя первая Mini App.</p>
-    <button onclick="alert('Привет! Скоро здесь будут бои!')">Нажми меня</button>
+
+    <!-- ЗАГРУЗОЧНЫЙ ЭКРАН -->
+    <div id="splash-screen">
+        <div class="game-title">Битва за трон</div>
+        
+        <div class="progress-container">
+            <div class="progress-fill" id="progress-fill"></div>
+            <div class="progress-text" id="progress-text">0%</div>
+        </div>
+    </div>
+
+    <!-- ИГРА (Скрыта изначально) -->
+    <div id="game-container">
+        <h2>Бой начался!</h2>
+        <div class="card">
+            <h3>👹 Враг: Гоблин</h3>
+            <div class="hp-bar"><div class="hp-fill" id="enemy-hp-bar"></div></div>
+            <p>HP: <span id="enemy-hp-text">50</span> / 50</p>
+        </div>
+
+        <div class="log" id="log">Ты готов к бою...</div>
+
+        <div class="card">
+            <h3>🛡️ Твой Воин</h3>
+            <div class="hp-bar"><div class="hp-fill" id="player-hp-bar" style="background-color: #4e9f3d;"></div></div>
+            <p>HP: <span id="player-hp-text">100</span> / 100</p>
+        </div>
+
+        <button onclick="attack()">Атаковать!</button>
+        <button onclick="location.reload()">Заново</button>
+    </div>
+
+    <script>
+        // --- ЛОГИКА ЗАГРУЗКИ ---
+        let progress = 0;
+        const fill = document.getElementById('progress-fill');
+        const text = document.getElementById('progress-text');
+        const splash = document.getElementById('splash-screen');
+        const game = document.getElementById('game-container');
+
+        // Функция загрузки
+        const interval = setInterval(() => {
+            // Прибавляем от 1 до 5 процентов каждый раз (для реалистичности)
+            progress += Math.floor(Math.random() * 5) + 1;
+            
+            // Если дошли до 100
+            if (progress >= 100) {
+                progress = 100;
+                clearInterval(interval); // Останавливаем загрузку
+                
+                // Ждем полсекунды и убираем экран
+                setTimeout(() => {
+                    splash.style.opacity = '0';
+                    setTimeout(() => {
+                        splash.style.display = 'none';
+                        game.style.display = 'block';
+                    }, 1000); // Ждем окончания анимации исчезновения
+                }, 500);
+            }
+
+            // Обновляем полоску и текст
+            fill.style.width = progress + '%';
+            text.innerText = progress + '%';
+        }, 50); // Скорость загрузки (каждые 50 миллисекунд)
+
+        // --- ЛОГИКА БОЯ ---
+        let enemyHp = 50;
+        let playerHp = 100;
+        let isGameOver = false;
+
+        const enemyHpBar = document.getElementById('enemy-hp-bar');
+        const enemyHpText = document.getElementById('enemy-hp-text');
+        const playerHpBar = document.getElementById('player-hp-bar');
+        const playerHpText = document.getElementById('player-hp-text');
+        const log = document.getElementById('log');
+
+        function updateUI() {
+            enemyHpBar.style.width = Math.max(0, (enemyHp / 50) * 100) + '%';
+            enemyHpText.innerText = Math.max(0, enemyHp);
+            playerHpBar.style.width = Math.max(0, (playerHp / 100) * 100) + '%';
+            playerHpText.innerText = Math.max(0, playerHp);
+        }
+
+        function attack() {
+            if (isGameOver) return;
+            let playerDamage = Math.floor(Math.random() * 6) + 10;
+            enemyHp -= playerDamage;
+            log.innerText = `Ты нанёс ${playerDamage} урона!`;
+            updateUI();
+
+            if (enemyHp <= 0) {
+                log.innerText += " 👑 Враг повержен!";
+                isGameOver = true;
+                return;
+            }
+
+            setTimeout(() => {
+                if (isGameOver) return;
+                let enemyDamage = Math.floor(Math.random() * 5) + 5;
+                playerHp -= enemyDamage;
+                log.innerText += ` | Враг нанёс ${enemyDamage} урона!`;
+                updateUI();
+
+                if (playerHp <= 0) {
+                    log.innerText += " 💀 Ты проиграл...";
+                    isGameOver = true;
+                }
+            }, 500);
+        }
+    </script>
 </body>
 </html>
