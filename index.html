@@ -14,6 +14,7 @@
             color: white;
             user-select: none;
             -webkit-user-select: none;
+            touch-action: none; /* Отключаем стандартный скролл/зум браузера */
         }
 
         /* --- ЗАГРУЗКА --- */
@@ -92,37 +93,52 @@
             padding: 10px; box-sizing: border-box;
             background: rgba(0,0,0,0.7);
             display: flex; justify-content: space-between;
-            align-items: center; z-index: 10;
+            align-items: center; z-index: 1000;
+            pointer-events: none; /* Пропускаем клики сквозь тулбар, кроме кнопки */
         }
-        #map-toolbar h3 { margin: 0; color: #FFD700; font-size: 18px; }
-        #map-toolbar button { padding: 8px 14px; font-size: 14px; margin: 0; }
+        #map-toolbar h3 { margin: 0; color: #FFD700; font-size: 18px; text-shadow: 1px 1px 2px #000; }
+        #map-toolbar button { padding: 8px 14px; font-size: 14px; margin: 0; pointer-events: auto; }
 
-        /* Игровое поле (зелёный фон, без клеток) */
-        #map-scroll {
-            position: absolute; top: 55px; left: 0;
-            width: 100%; height: calc(100vh - 55px);
-            overflow: auto; -webkit-overflow-scrolling: touch;
+        /* Контейнер, в котором двигается карта */
+        #map-viewport {
+            position: absolute; top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            overflow: hidden;
+            cursor: grab;
         }
-        
-        #map-grid {
-            position: relative;
-            width: 1000px;
-            height: 800px;
-            background-color: #2a5d34; /* Зелёный фон */
-            /* Если хочешь текстуру земли, раскомментируй ниже: */
+        #map-viewport:active { cursor: grabbing; }
+
+        /* Сама карта, которую мы двигаем */
+        #map-world {
+            position: absolute;
+            top: 0; left: 0;
+            width: 2000px; height: 1500px;
+            /* Зеленый фон карты */
+            background-color: #2a5d34;
+            
+            /* Рисуем изометрическую сетку через CSS (опционально, для визуала) */
+            background-image: 
+                linear-gradient(45deg, rgba(0,0,0,0.1) 25%, transparent 25%, transparent 75%, rgba(0,0,0,0.1) 75%, rgba(0,0,0,0.1)),
+                linear-gradient(45deg, rgba(0,0,0,0.1) 25%, transparent 25%, transparent 75%, rgba(0,0,0,0.1) 75%, rgba(0,0,0,0.1));
+            background-size: 80px 80px; /* Размер ромба */
+            background-position: 0 0, 40px 40px;
+            
+            /* Если у тебя есть картинка земли, замени фон выше на: */
             /* background-image: url('ground.png'); */
             /* background-size: cover; */
+            /* background-color: transparent; */
+            
+            transform-origin: 0 0; /* Важно для зума (если будем делать) */
         }
 
-        /* Стили для зданий на карте */
+        /* Слой для зданий (чтобы z-index работал) */
         .building-img {
             position: absolute;
-            pointer-events: none; /* чтобы клик шёл по карте */
+            pointer-events: none;
             object-fit: contain;
-            filter: drop-shadow(0 8px 10px rgba(0,0,0,0.6));
-            /* Центрируем картинку относительно точки клика */
-            transform: translate(-50%, -80%); 
-            transition: transform 0.1s;
+            filter: drop-shadow(0 10px 15px rgba(0,0,0,0.7));
+            transform: translate(-50%, -85%); /* Центровка по низу */
+            transition: none;
         }
 
         /* Меню постройки */
@@ -131,7 +147,7 @@
             bottom: 0; left: 0; width: 100%;
             background: linear-gradient(180deg, #16213e, #0a0f1e);
             padding: 15px;
-            box-sizing: border-box; z-index: 200;
+            box-sizing: border-box; z-index: 2000;
             border-top: 2px solid #FFD700;
             text-align: center;
         }
@@ -200,8 +216,8 @@
             <h3>🏰 Твоя база</h3>
             <button onclick="closeMap()">Закрыть</button>
         </div>
-        <div id="map-scroll">
-            <div id="map-grid"></div>
+        <div id="map-viewport">
+            <div id="map-world"></div>
         </div>
     </div>
 
@@ -282,52 +298,50 @@
         }
 
         // --- КАРТА ---
-        const mapGrid = document.getElementById('map-grid');
+        const mapWorld = document.getElementById('map-world');
         const mapScreen = document.getElementById('map-screen');
+        const mapViewport = document.getElementById('map-viewport');
         const buildMenu = document.getElementById('build-menu');
         const buildOptionsEl = document.getElementById('build-options');
         
-        // Размеры
-        const MAP_WIDTH = 1000;
-        const MAP_HEIGHT = 800;
+        const MAP_WIDTH = 2000;
+        const MAP_HEIGHT = 1500;
 
-        // Настройки зданий (размеры увеличены)
         const BUILDINGS = {
-            castle:    { name: 'Замок',       img: 'castle.png',     size: 200 }, // х2
-            barracks:  { name: 'Казарма',     img: 'barracks.png',   size: 120 }, // х1.5
-            farm:      { name: 'Ферма',       img: 'farm.png',       size: 120 }, // х1.5
-            quarry:    { name: 'Каменоломня', img: 'quarry.png',     size: 120 }, // х1.5
-            lumbermill:{ name: 'Лесопилка',   img: 'lumbermill.png', size: 120 }  // х1.5
+            castle:    { name: 'Замок',       img: 'castle.png',     size: 200 }, 
+            barracks:  { name: 'Казарма',     img: 'barracks.png',   size: 120 }, 
+            farm:      { name: 'Ферма',       img: 'farm.png',       size: 120 }, 
+            quarry:    { name: 'Каменоломня', img: 'quarry.png',     size: 120 }, 
+            lumbermill:{ name: 'Лесопилка',   img: 'lumbermill.png', size: 120 }  
         };
 
-        // Список зданий для меню (БЕЗ ЗАМКА)
         const BUILDABLE = ['barracks', 'farm', 'quarry', 'lumbermill'];
 
-        // Массив всех зданий на карте
-        // { id, key, x, y }
         let buildingsOnMap = [];
 
+        // Переменные для панорамирования (перетаскивания)
+        let isDragging = false;
+        let startX, startY;
+        let translateX = 0, translateY = 0; // Текущий сдвиг карты
+        let pendingTapX = null, pendingTapY = null;
+
         function initMap() {
-            mapGrid.innerHTML = '';
+            mapWorld.innerHTML = '';
             
-            // Проверяем сохранение
             let saved = localStorage.getItem('baseBuildings');
             if (saved) {
-                try {
-                    buildingsOnMap = JSON.parse(saved);
-                } catch(e) { buildingsOnMap = []; }
+                try { buildingsOnMap = JSON.parse(saved); } catch(e) { buildingsOnMap = []; }
             } else {
-                // Если нет сохранения, ставим Замок в центр
+                // Ставим Замок в центр
                 buildingsOnMap = [
                     { id: 1, key: 'castle', x: MAP_WIDTH/2, y: MAP_HEIGHT/2 }
                 ];
                 saveBuildings();
             }
 
-            // Отрисовываем здания
             buildingsOnMap.forEach(b => renderBuilding(b));
 
-            // Создаем меню постройки
+            // Меню постройки
             buildOptionsEl.innerHTML = '';
             BUILDABLE.forEach(key => {
                 const b = BUILDINGS[key];
@@ -341,22 +355,97 @@
                 buildOptionsEl.appendChild(opt);
             });
 
-            // Обработчик клика по карте (по пустому месту)
-            mapGrid.addEventListener('click', (e) => {
-                // Если кликнули по зданию (у них pointer-events: none, так что клик всегда идет по карте)
-                // Запоминаем координаты для постройки
-                const rect = mapGrid.getBoundingClientRect();
-                const clickX = e.clientX - rect.left;
-                const clickY = e.clientY - rect.top;
-                
-                // Открываем меню
-                window.pendingX = clickX;
-                window.pendingY = clickY;
-                buildMenu.style.display = 'block';
-            });
+            // Центрируем камеру на Замке при старте
+            setTimeout(() => {
+                const centerX = window.innerWidth / 2 - MAP_WIDTH / 2;
+                const centerY = window.innerHeight / 2 - MAP_HEIGHT / 2;
+                translateX = centerX;
+                translateY = centerY;
+                updateMapPosition();
+            }, 100);
+
+            // --- ОБРАБОТЧИКИ ПЕРЕТАСКИВАНИЯ (КАМЕРА) ---
+            mapViewport.addEventListener('mousedown', startDrag);
+            mapViewport.addEventListener('touchstart', startDrag, {passive: false});
+            
+            window.addEventListener('mousemove', drag);
+            window.addEventListener('touchmove', drag, {passive: false});
+            
+            window.addEventListener('mouseup', endDrag);
+            window.addEventListener('touchend', endDrag);
         }
 
-        // Отрисовка одного здания
+        function startDrag(e) {
+            isDragging = true;
+            if (e.touches) {
+                startX = e.touches[0].clientX;
+                startY = e.touches[0].clientY;
+            } else {
+                startX = e.clientX;
+                startY = e.clientY;
+            }
+            pendingTapX = null; // Сбрасываем возможный клик
+        }
+
+        function drag(e) {
+            if (!isDragging) return;
+            // Предотвращаем скролл страницы
+            if (e.cancelable) e.preventDefault(); 
+
+            let clientX, clientY;
+            if (e.touches) {
+                clientX = e.touches[0].clientX;
+                clientY = e.touches[0].clientY;
+            } else {
+                clientX = e.clientX;
+                clientY = e.clientY;
+            }
+
+            const dx = clientX - startX;
+            const dy = clientY - startY;
+
+            // Если сдвинули больше чем на 5 пикселей, это уже не клик, а перетаскивание
+            if (Math.abs(dx) > 5 || Math.abs(dy) > 5) {
+                pendingTapX = null;
+            }
+
+            translateX += dx;
+            translateY += dy;
+            
+            startX = clientX;
+            startY = clientY;
+            
+            updateMapPosition();
+        }
+
+        function endDrag(e) {
+            if (!isDragging) return;
+            isDragging = false;
+        }
+
+        function updateMapPosition() {
+            mapWorld.style.transform = `translate(${translateX}px, ${translateY}px)`;
+        }
+
+        // Обработка клика/тапа (открытие меню постройки)
+        mapViewport.addEventListener('click', (e) => {
+            if (isDragging) return;
+            // Если это был скролл, а не клик
+            if (e.clientX && e.clientY) {
+                // Пересчитываем координаты клика в координаты карты
+                const rect = mapViewport.getBoundingClientRect();
+                const clickX = e.clientX - rect.left - translateX;
+                const clickY = e.clientY - rect.top - translateY;
+                
+                // Проверяем границы
+                if (clickX >= 0 && clickX <= MAP_WIDTH && clickY >= 0 && clickY <= MAP_HEIGHT) {
+                    window.pendingX = clickX;
+                    window.pendingY = clickY;
+                    buildMenu.style.display = 'block';
+                }
+            }
+        });
+
         function renderBuilding(b) {
             const config = BUILDINGS[b.key];
             const img = document.createElement('img');
@@ -364,26 +453,21 @@
             img.className = 'building-img';
             img.style.width = config.size + 'px';
             img.style.height = config.size + 'px';
-            // Позиция: центр картинки в точке x,y
+            
+            // Позиция
             img.style.left = b.x + 'px';
             img.style.top = b.y + 'px';
-            // Немного приподнимаем для эффекта изометрии
-            img.style.transform = 'translate(-50%, -80%)'; 
             
-            // Сортировка по глубине (y)
+            // Z-index (сортировка по глубине)
             img.style.zIndex = Math.floor(b.y);
 
             img.dataset.id = b.id;
-            mapGrid.appendChild(img);
+            mapWorld.appendChild(img);
         }
 
-        // Поставить здание
         function placeBuilding(key) {
-            if (window.pendingX === undefined) return;
+            if (window.pendingX === undefined || window.pendingX === null) return;
 
-            // Проверка, чтобы не строили слишком близко к другим зданиям (опционально)
-            // Здесь просто ставим в точку клика
-            
             const newBuilding = {
                 id: Date.now(),
                 key: key,
@@ -395,10 +479,9 @@
             renderBuilding(newBuilding);
             saveBuildings();
             
-            // Закрываем меню и чистим координаты
             closeBuildMenu();
-            window.pendingX = undefined;
-            window.pendingY = undefined;
+            window.pendingX = null;
+            window.pendingY = null;
         }
 
         function closeBuildMenu() {
@@ -406,16 +489,24 @@
         }
 
         function saveBuildings() {
-            try {
-                localStorage.setItem('baseBuildings', JSON.stringify(buildingsOnMap));
-            } catch(e) {}
+            try { localStorage.setItem('baseBuildings', JSON.stringify(buildingsOnMap)); } catch(e) {}
         }
 
         // --- ПЕРЕХОДЫ ---
         function openMap() {
             game.style.display = 'none';
             mapScreen.style.display = 'block';
+            // Центрируем камеру при открытии
+            if (buildingsOnMap.length > 0) {
+                const castle = buildingsOnMap.find(b => b.key === 'castle');
+                if (castle) {
+                    translateX = window.innerWidth / 2 - castle.x;
+                    translateY = window.innerHeight / 2 - castle.y;
+                    updateMapPosition();
+                }
+            }
         }
+        
         function closeMap() {
             mapScreen.style.display = 'none';
             game.style.display = 'block';
