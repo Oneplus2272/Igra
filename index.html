@@ -4,137 +4,154 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Битва за трон</title>
-    <!-- Подключаем официальный скрипт Telegram -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         body {
-            margin: 0;
-            padding: 0;
+            margin: 0; padding: 0;
             background-color: #000;
             font-family: 'Arial', sans-serif;
-            overflow: hidden; /* Убираем прокрутку */
+            overflow: hidden;
             color: white;
-            /* Отключаем выделение текста, чтобы игра ощущалась как приложение */
-            user-select: none; 
+            user-select: none;
             -webkit-user-select: none;
         }
 
-        /* --- ЗАГРУЗОЧНЫЙ ЭКРАН --- */
+        /* --- ЗАГРУЗКА (твоё) --- */
         #splash-screen {
-            position: fixed;
-            top: 0; left: 0; width: 100vw; height: 100vh;
-            background-image: url('bj.jpg'); 
-            background-size: cover;
-            background-position: center;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            z-index: 9999;
-            transition: opacity 1s ease-out;
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background-image: url('bj.jpg');
+            background-size: cover; background-position: center;
+            display: flex; flex-direction: column;
+            justify-content: center; align-items: center;
+            z-index: 9999; transition: opacity 1s ease-out;
         }
-
         #splash-screen::before {
-            content: "";
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0.5);
-            z-index: -1;
+            content: ""; position: absolute; top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5); z-index: -1;
         }
-
         .game-title {
-            font-family: 'Georgia', serif;
-            font-size: 42px;
-            font-weight: bold;
-            color: #FFD700;
-            text-align: center;
-            text-transform: uppercase;
+            font-family: 'Georgia', serif; font-size: 42px; font-weight: bold;
+            color: #FFD700; text-align: center; text-transform: uppercase;
             letter-spacing: 3px;
             text-shadow: 0 0 10px #FF8C00, 0 0 20px #FF4500, 0 0 30px #FF4500;
-            margin-bottom: 50px;
-            animation: fadeInDown 2s ease-out;
+            margin-bottom: 50px; animation: fadeInDown 2s ease-out;
         }
-
         .progress-container {
-            width: 80%;
-            max-width: 350px;
-            height: 30px;
-            background-color: rgba(255, 255, 255, 0.2);
-            border: 2px solid #FFD700;
-            border-radius: 15px;
-            position: relative;
-            overflow: hidden;
-            box-shadow: 0 0 15px rgba(255, 215, 0, 0.5);
+            width: 80%; max-width: 350px; height: 30px;
+            background-color: rgba(255,255,255,0.2);
+            border: 2px solid #FFD700; border-radius: 15px;
+            position: relative; overflow: hidden;
+            box-shadow: 0 0 15px rgba(255,215,0,0.5);
         }
-
         .progress-fill {
-            height: 100%;
-            width: 0%;
+            height: 100%; width: 0%;
             background: linear-gradient(90deg, #FFD700, #FFA500);
-            border-radius: 12px;
-            transition: width 0.1s linear;
+            border-radius: 12px; transition: width 0.1s linear;
         }
-
         .progress-text {
-            position: absolute;
-            top: 50%; left: 50%;
+            position: absolute; top: 50%; left: 50%;
             transform: translate(-50%, -50%);
-            font-weight: bold;
-            font-size: 16px;
-            color: #fff;
-            text-shadow: 1px 1px 3px #000;
+            font-weight: bold; font-size: 16px;
+            color: #fff; text-shadow: 1px 1px 3px #000;
         }
-
         @keyframes fadeInDown {
             from { opacity: 0; transform: translateY(-30px); }
             to { opacity: 1; transform: translateY(0); }
         }
 
-        /* --- СТИЛИ ИГРЫ (АРЕНА) --- */
-        #game-container { 
-            display: none; 
-            padding: 20px; 
-            text-align: center;
-            height: 100vh;
-            box-sizing: border-box;
-            background-color: #1a1a2e; /* Фон для арены */
+        /* --- ИГРА (твоё) --- */
+        #game-container {
+            display: none; padding: 20px; text-align: center;
+            height: 100vh; box-sizing: border-box;
+            background-color: #1a1a2e; overflow-y: auto;
         }
         .card {
-            background-color: #16213e;
-            border-radius: 15px;
-            padding: 15px;
-            margin-bottom: 20px;
+            background-color: #16213e; border-radius: 15px;
+            padding: 15px; margin-bottom: 20px;
             box-shadow: 0 4px 8px rgba(0,0,0,0.5);
         }
         .hp-bar { background-color: #444; height: 20px; border-radius: 10px; overflow: hidden; margin-top: 10px; }
         .hp-fill { background-color: #e94560; height: 100%; width: 100%; transition: width 0.3s; }
-        button { 
-            background-color: #0f3460; 
-            color: white; 
-            border: none; 
-            padding: 15px 30px; 
-            font-size: 18px; 
-            border-radius: 10px; 
-            margin: 5px; 
-            cursor: pointer; 
+        button {
+            background-color: #0f3460; color: white; border: none;
+            padding: 15px 30px; font-size: 18px; border-radius: 10px;
+            margin: 5px; cursor: pointer;
         }
         button:active { background-color: #e94560; }
         .log { font-size: 14px; color: #aaa; height: 60px; margin-top: 10px; }
+
+        /* --- КАРТА БАЗЫ --- */
+        #map-screen {
+            display: none; position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background-color: #0d1b2a; z-index: 100; overflow: hidden;
+        }
+        #map-toolbar {
+            position: absolute; top: 0; left: 0; width: 100%;
+            padding: 10px; box-sizing: border-box;
+            background: rgba(0,0,0,0.7);
+            display: flex; justify-content: space-between;
+            align-items: center; z-index: 10;
+        }
+        #map-toolbar h3 { margin: 0; color: #FFD700; font-size: 18px; }
+        #map-toolbar button {
+            padding: 8px 14px; font-size: 14px; margin: 0;
+        }
+        #map-scroll {
+            position: absolute; top: 55px; left: 0;
+            width: 100%; height: calc(100vh - 55px);
+            overflow: auto; -webkit-overflow-scrolling: touch;
+        }
+        #map-grid {
+            display: grid;
+            grid-template-columns: repeat(25, 40px);
+            grid-template-rows: repeat(10, 40px);
+            gap: 1px; padding: 10px;
+            width: max-content;
+        }
+        .cell {
+            width: 40px; height: 40px;
+            background-color: #2a5d34;
+            border: 1px solid rgba(0,0,0,0.3);
+            box-sizing: border-box;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 22px; cursor: pointer;
+            border-radius: 3px;
+            transition: background-color 0.15s;
+        }
+        .cell:active { background-color: #3a7d44; }
+        .cell.building { background-color: #4a4a2a; }
+        .cell.road { background-color: #6b6b4a; }
+        .cell.water { background-color: #1e4a6b; }
+
+        /* Меню постройки */
+        #build-menu {
+            display: none; position: fixed;
+            bottom: 0; left: 0; width: 100%;
+            background: #16213e; padding: 15px;
+            box-sizing: border-box; z-index: 200;
+            border-top: 2px solid #FFD700;
+            text-align: center;
+        }
+        #build-menu h4 { margin: 0 0 10px 0; color: #FFD700; }
+        #build-menu button {
+            padding: 10px 15px; font-size: 15px; margin: 4px;
+        }
     </style>
 </head>
 <body>
 
-    <!-- ЗАГРУЗОЧНЫЙ ЭКРАН -->
+    <!-- ЗАГРУЗКА -->
     <div id="splash-screen">
         <div class="game-title">Битва за трон</div>
-        
         <div class="progress-container">
             <div class="progress-fill" id="progress-fill"></div>
             <div class="progress-text" id="progress-text">0%</div>
         </div>
     </div>
 
-    <!-- ИГРА (Скрыта изначально) -->
+    <!-- БОЙ -->
     <div id="game-container">
         <h2>Бой начался!</h2>
         <div class="card">
@@ -142,52 +159,51 @@
             <div class="hp-bar"><div class="hp-fill" id="enemy-hp-bar"></div></div>
             <p>HP: <span id="enemy-hp-text">50</span> / 50</p>
         </div>
-
         <div class="log" id="log">Ты готов к бою...</div>
-
         <div class="card">
             <h3>🛡️ Твой Воин</h3>
             <div class="hp-bar"><div class="hp-fill" id="player-hp-bar" style="background-color: #4e9f3d;"></div></div>
             <p>HP: <span id="player-hp-text">100</span> / 100</p>
         </div>
-
         <button onclick="attack()">Атаковать!</button>
+        <button onclick="openMap()">🗺️ На базу</button>
         <button onclick="location.reload()">Заново</button>
     </div>
 
+    <!-- КАРТА БАЗЫ -->
+    <div id="map-screen">
+        <div id="map-toolbar">
+            <h3>🏰 Твоя база</h3>
+            <button onclick="closeMap()">Закрыть</button>
+        </div>
+        <div id="map-scroll">
+            <div id="map-grid"></div>
+        </div>
+    </div>
+
+    <!-- МЕНЮ ПОСТРОЙКИ -->
+    <div id="build-menu">
+        <h4>Выбери здание</h4>
+        <button onclick="placeBuilding('🏠')">🏠 Дом</button>
+        <button onclick="placeBuilding('⚔️')">⚔️ Казарма</button>
+        <button onclick="placeBuilding('⛏️')">⛏️ Шахта</button>
+        <button onclick="closeBuildMenu()">Отмена</button>
+    </div>
+
     <script>
-        // --- МАГИЯ ПОЛНОЭКРАННОГО РЕЖИМА TELEGRAM ---
-        // Ждем, пока Telegram загрузится
+        // --- TELEGRAM ---
         window.onload = () => {
             if (window.Telegram && window.Telegram.WebApp) {
                 const tg = window.Telegram.WebApp;
-                
-                // Говорим Telegram, что игра готова
-                tg.ready(); 
-                
-                // Разворачиваем на максимум (Fullsize)
-                tg.expand();
-                
-                // Пытаемся включить НАСТОЯЩИЙ полный экран (скрывает панели)
-                try {
-                    if (tg.requestFullscreen) {
-                        tg.requestFullscreen();
-                    }
-                } catch (e) {
-                    console.log("Полный экран не поддерживается:", e);
-                }
-
-                // Включаем блокировку свайпа вниз (чтобы случайно не закрыть игру)
-                if (tg.enableClosingConfirmation) {
-                    tg.enableClosingConfirmation();
-                }
+                tg.ready(); tg.expand();
+                try { if (tg.requestFullscreen) tg.requestFullscreen(); } catch(e) {}
+                if (tg.enableClosingConfirmation) tg.enableClosingConfirmation();
             }
-            
-            // Запускаем загрузку игры
             startLoading();
+            initMap();
         };
 
-        // --- ЛОГИКА ЗАГРУЗКИ ---
+        // --- ЗАГРУЗКА ---
         let progress = 0;
         const fill = document.getElementById('progress-fill');
         const text = document.getElementById('progress-text');
@@ -197,11 +213,8 @@
         function startLoading() {
             const interval = setInterval(() => {
                 progress += Math.floor(Math.random() * 5) + 1;
-                
                 if (progress >= 100) {
-                    progress = 100;
-                    clearInterval(interval);
-                    
+                    progress = 100; clearInterval(interval);
                     setTimeout(() => {
                         splash.style.opacity = '0';
                         setTimeout(() => {
@@ -210,17 +223,13 @@
                         }, 1000);
                     }, 500);
                 }
-
                 fill.style.width = progress + '%';
                 text.innerText = progress + '%';
             }, 50);
         }
 
-        // --- ЛОГИКА БОЯ ---
-        let enemyHp = 50;
-        let playerHp = 100;
-        let isGameOver = false;
-
+        // --- БОЙ ---
+        let enemyHp = 50, playerHp = 100, isGameOver = false;
         const enemyHpBar = document.getElementById('enemy-hp-bar');
         const enemyHpText = document.getElementById('enemy-hp-text');
         const playerHpBar = document.getElementById('player-hp-bar');
@@ -228,37 +237,104 @@
         const log = document.getElementById('log');
 
         function updateUI() {
-            enemyHpBar.style.width = Math.max(0, (enemyHp / 50) * 100) + '%';
+            enemyHpBar.style.width = Math.max(0, (enemyHp/50)*100) + '%';
             enemyHpText.innerText = Math.max(0, enemyHp);
-            playerHpBar.style.width = Math.max(0, (playerHp / 100) * 100) + '%';
+            playerHpBar.style.width = Math.max(0, (playerHp/100)*100) + '%';
             playerHpText.innerText = Math.max(0, playerHp);
         }
-
         function attack() {
             if (isGameOver) return;
-            let playerDamage = Math.floor(Math.random() * 6) + 10;
+            let playerDamage = Math.floor(Math.random()*6) + 10;
             enemyHp -= playerDamage;
             log.innerText = `Ты нанёс ${playerDamage} урона!`;
             updateUI();
-
-            if (enemyHp <= 0) {
-                log.innerText += " 👑 Враг повержен!";
-                isGameOver = true;
-                return;
-            }
-
+            if (enemyHp <= 0) { log.innerText += " 👑 Враг повержен!"; isGameOver = true; return; }
             setTimeout(() => {
                 if (isGameOver) return;
-                let enemyDamage = Math.floor(Math.random() * 5) + 5;
+                let enemyDamage = Math.floor(Math.random()*5) + 5;
                 playerHp -= enemyDamage;
                 log.innerText += ` | Враг нанёс ${enemyDamage} урона!`;
                 updateUI();
-
-                if (playerHp <= 0) {
-                    log.innerText += " 💀 Ты проиграл...";
-                    isGameOver = true;
-                }
+                if (playerHp <= 0) { log.innerText += " 💀 Ты проиграл..."; isGameOver = true; }
             }, 500);
+        }
+
+        // --- КАРТА БАЗЫ 25x10 ---
+        const COLS = 25, ROWS = 10;
+        const gridEl = document.getElementById('map-grid');
+        const mapScreen = document.getElementById('map-screen');
+        const buildMenu = document.getElementById('build-menu');
+        let selectedCell = null;
+        // Состояние клеток (для будущего сохранения)
+        let mapData = [];
+
+        function initMap() {
+            gridEl.innerHTML = '';
+            mapData = [];
+            for (let r = 0; r < ROWS; r++) {
+                mapData[r] = [];
+                for (let c = 0; c < COLS; c++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'cell';
+                    cell.dataset.r = r; cell.dataset.c = c;
+                    // Немного "леса" по умолчанию
+                    if (Math.random() < 0.08) {
+                        cell.classList.add('water');
+                        mapData[r][c] = 'water';
+                    } else {
+                        mapData[r][c] = 'empty';
+                    }
+                    cell.addEventListener('click', () => onCellClick(cell, r, c));
+                    gridEl.appendChild(cell);
+                }
+            }
+            // Ставим стартовые здания
+            setCell(5, 5, '🏰', 'building');
+            setCell(5, 6, '🏠', 'building');
+            setCell(6, 5, '⚔️', 'building');
+        }
+
+        function setCell(r, c, icon, type) {
+            const idx = r * COLS + c;
+            const cell = gridEl.children[idx];
+            if (!cell) return;
+            cell.innerText = icon;
+            cell.className = 'cell ' + type;
+            mapData[r][c] = type;
+        }
+
+        function onCellClick(cell, r, c) {
+            if (cell.innerText) {
+                // Если на клетке уже что-то есть — просто сообщаем
+                alert(`Клетка (${c+1}, ${r+1}): ${cell.innerText}`);
+                return;
+            }
+            selectedCell = cell;
+            buildMenu.style.display = 'block';
+        }
+
+        function placeBuilding(icon) {
+            if (!selectedCell) return;
+            selectedCell.innerText = icon;
+            selectedCell.classList.add('building');
+            const r = selectedCell.dataset.r, c = selectedCell.dataset.c;
+            mapData[r][c] = 'building';
+            closeBuildMenu();
+        }
+
+        function closeBuildMenu() {
+            buildMenu.style.display = 'none';
+            selectedCell = null;
+        }
+
+        // --- ПЕРЕХОДЫ ---
+        function openMap() {
+            game.style.display = 'none';
+            mapScreen.style.display = 'block';
+        }
+        function closeMap() {
+            mapScreen.style.display = 'none';
+            game.style.display = 'block';
         }
     </script>
 </body>
